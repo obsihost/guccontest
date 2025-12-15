@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming Contest Scoreboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .trophy-icon {
+            width: 40px;
+            height: 40px;
+            fill: #fbbf24;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .refresh-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        .refresh-icon.spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .last-update {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .auto-refresh-info {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .error-box {
+            background: #fee;
+            border: 2px solid #fcc;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .error-icon {
+            width: 64px;
+            height: 64px;
+            stroke: #e53e3e;
+            margin: 0 auto 20px;
+        }
+
+        .error-box h3 {
+            color: #c53030;
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .error-box p {
+            color: #e53e3e;
+            margin-bottom: 20px;
+        }
+
+        .loading-box {
+            background: white;
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .loading-icon {
+            width: 64px;
+            height: 64px;
+            stroke: #667eea;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        .stats-box {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stats-box h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .stats-box p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .team-count {
+            text-align: right;
+        }
+
+        .team-count .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .team-count .label {
+            color: #666;
+        }
+
+        .scoreboard-table {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        th.center {
+            text-align: center;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e5e7eb;
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f3f4ff;
+        }
+
+        tbody tr.rank-1 {
+            background: #fef3c7;
+        }
+
+        tbody tr.rank-2 {
+            background: #f3f4f6;
+        }
+
+        tbody tr.rank-3 {
+            background: #fed7aa;
+        }
+
+        td {
+            padding: 20px;
+        }
+
+        .rank-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rank-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .trophy-small {
+            width: 24px;
+            height: 24px;
+        }
+
+        .trophy-gold { fill: #fbbf24; }
+        .trophy-silver { fill: #9ca3af; }
+        .trophy-bronze { fill: #fb923c; }
+
+        .team-name {
+            font-weight: 600;
+            color: #111;
+            margin-bottom: 5px;
+        }
+
+        .team-id {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .solved-count {
+            font-size: 2em;
+            font-weight: bold;
+            color: #10b981;
+            text-align: center;
+        }
+
+        .penalty-time {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+        }
+
+        .problems-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .problem-box {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .problem-box:hover {
+            transform: scale(1.15);
+        }
+
+        .problem-solved {
+            background: #10b981;
+            color: white;
+        }
+
+        .problem-attempted {
+            background: #ef4444;
+            color: white;
+        }
+
+        .problem-not-attempted {
+            background: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .problem-pending {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .problem-compile {
+            background: #6b7280;
+            color: white;
+        }
+
+        /* Time Limit = yellow */
+        .problem-time {
+            background: #facc15; /* yellow */
+            color: #1f2937; /* dark text for contrast */
+        }
+
+        .rules-box {
+            background: #dbeafe;
+            border: 2px solid #93c5fd;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .rules-box h3 {
+            color: #1e40af;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .rules-grid div {
+            color: #1e3a8a;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #93c5fd;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .problem-box {
+                width: 32px;
+                height: 32px;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <svg class="trophy-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 3h12c1.1 0 2 .9 2 2v2c0 2.2-1.8 4-4 4h-.5c-.8 1.2-2.1 2-3.5 2.2V15h3c1.1 0 2 .9 2 2v2h2v2H5v-2h2v-2c0-1.1.9-2 2-2h3v-1.8c-1.4-.2-2.7-1-3.5-2.2H8c-2.2 0-4-1.8-4-4V5c0-1.1.9-2 2-2zm0 2v2c0 1.1.9 2 2 2h.5C8.8 8.3 9 7.7 9 7V5H6zm12 0h-3v2c0 .7.2 1.3.5 2h.5c1.1 0 2-.9 2-2V5z"/>
+                </svg>
+                Programming Contest Scoreboard
+            </h1>
+            <p>14 Problems • Live Rankings</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="refresh-btn" onclick="fetchData()" id="refreshBtn">
+                    <svg class="refresh-icon" id="refreshIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                    Refresh
+                </button>
+                <span class="last-update" id="lastUpdate"></span>
+            </div>
+            <span class="auto-refresh-info">Auto-refresh every 30 seconds</span>
+        </div>
+
+        <!-- Content Area -->
+        <div id="contentArea"></div>
+    </div>
+
+<script>
+        // CONFIGURATION: Replace with your Google Sheet ID
+        // Find this in your sheet URL: https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit
+        const SHEET_ID = '1if_-H4fSV62FhzWcFOom09U631FtDTOR8uBV4hLnfhQ';
+        const SHEET_NAME = 'Form Responses 1'; // Change this to your sheet tab name if different
+        
+        // Google Sheets API endpoint (no API key needed for public sheets)
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
+
+        let standings = [];
+        let autoRefreshInterval;
+
+        // Start auto-refresh on load
+        window.onload = function() {
+            fetchData();
+            autoRefreshInterval = setInterval(fetchData, 30000); // 30 seconds
+        };
+
+        async function fetchData() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            const contentArea = document.getElementById('contentArea');
+
+            refreshBtn.disabled = true;
+            refreshIcon.classList.add('spinning');
+
+            if (standings.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="loading-box">
+                        <svg class="loading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        <h3>Loading Scoreboard...</h3>
+                        <p style="color: #666; margin-top: 10px;">Fetching data from Google Sheets...</p>
+                    </div>
+                `;
+            }
+
+            try {
+                const response = await fetch(SHEET_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const text = await response.text();
+
+                const rows = parseCSV(text);
+                
+                // Skip header row and filter valid rows
+                const dataRows = rows.slice(1).filter(row => row.length > 1 && row[0]);
+
+                const submissions = dataRows.map((row, idx) => ({
+                    id: `sub_${idx}`,
+                    timestamp: row[0] || '',
+                    email: row[1] || '',
+                    teamId: row[2] || '',
+                    teamName: row[3] || '',
+                    problemNumber: row[4] || '',
+                    submission: row[5] || '',
+                    state: row[6] || 'Pending'
+                }));
+
+                calculateStandings(submissions);
+                renderScoreboard();
+                
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = 
+                    `Last updated: ${now.toLocaleTimeString()}`;
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                contentArea.innerHTML = `
+                    <div class="error-box">
+                        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h3>Error Loading Data</h3>
+                        <p>Failed to load data from Google Sheets.</p>
+                        <p style="font-size: 0.9em; color: #c53030; margin-top: 10px;"><strong>Make sure:</strong></p>
+                        <ul style="text-align: left; max-width: 500px; margin: 15px auto; color: #e53e3e; line-height: 1.6;">
+                            <li>Youve replaced SHEET_ID in the code with your actual Google Sheet ID</li>
+                            <li>Your Google Sheet is set to "Anyone with the link can view"</li>
+                            <li>The sheet name matches (currently set to: "${SHEET_NAME}")</li>
+                        </ul>
+                        <p style="font-size: 0.9em; color: #999; margin-top: 10px;">Error: ${error.message}</p>
+                        <button class="refresh-btn" onclick="fetchData()" style="margin-top: 15px;">Try Again</button>
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshIcon.classList.remove('spinning');
+            }
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        currentField += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    currentRow.push(currentField.trim());
+                    currentField = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (currentField || currentRow.length > 0) {
+                        currentRow.push(currentField.trim());
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentField = '';
+                    }
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                } else {
+                    currentField += char;
+                }
+            }
+
+            if (currentField || currentRow.length > 0) {
+                currentRow.push(currentField.trim());
+                rows.push(currentRow);
+            }
+
+            return rows;
+        }
+
+        function calculateStandings(submissions) {
+            const teamData = {};
+            
+            // Find the earliest submission time to use as contest start
+            let contestStart = Infinity;
+            submissions.forEach(sub => {
+                const time = parseTimestamp(sub.timestamp);
+                if (time && time < contestStart) {
+                    contestStart = time;
+                }
+            });
+
+            // If no valid timestamps found, use current time as fallback
+            if (contestStart === Infinity) {
+                contestStart = Date.now();
+            }
+
+            submissions.forEach(sub => {
+                const teamId = sub.teamId.trim();
+                if (!teamId) return;
+
+                if (!teamData[teamId]) {
+                    teamData[teamId] = {
+                        teamId,
+                        teamName: sub.teamName,
+                        solved: new Set(),
+                        attempts: {},
+                        penalties: 0,
+                        lastAcceptTime: 0
+                    };
+                }
+
+                const problem = sub.problemNumber.trim();
+                const team = teamData[teamId];
+
+                // Skip if already solved
+                if (team.solved.has(problem)) return;
+
+                // Initialize attempts counter object to track count + last state
+                if (!team.attempts[problem]) {
+                    team.attempts[problem] = { count: 0, lastState: null };
+                }
+
+                const state = (sub.state || '').toLowerCase().trim();
+
+                if (state === 'accepted') {
+                    team.solved.add(problem);
+                    team.attempts[problem].lastState = 'accepted';
+                    const submissionTime = parseTimestamp(sub.timestamp);
+                    if (submissionTime) {
+                        const minutesFromStart = Math.floor((submissionTime - contestStart) / 60000);
+                        team.penalties += minutesFromStart + (team.attempts[problem].count * 20);
+                        team.lastAcceptTime = Math.max(team.lastAcceptTime, submissionTime);
+                    }
+                } else if (state === 'wrong' || state === 'runtime' || state === 'time') {
+                    // These count as failed attempts (+20 minutes each)
+                    team.attempts[problem].count++;
+                    team.attempts[problem].lastState = state;
+                } else if (state === 'compile') {
+                    // Compiler errors do NOT count as attempts or penalty
+                    team.attempts[problem].lastState = 'compile';
+                } else if (state === 'pending' || state === '') {
+                    // Pending (or empty) - not yet judged
+                    team.attempts[problem].lastState = 'pending';
+                }
+            });
+
+            standings = Object.values(teamData)
+                .sort((a, b) => {
+                    // Sort by: 1) Problems solved (desc), 2) Penalty time (asc), 3) Last accept time (asc)
+                    if (b.solved.size !== a.solved.size) return b.solved.size - a.solved.size;
+                    if (a.penalties !== b.penalties) return a.penalties - b.penalties;
+                    return a.lastAcceptTime - b.lastAcceptTime;
+                })
+                .map((team, idx) => ({ ...team, rank: idx + 1 }));
+        }
+
+        function parseTimestamp(timestamp) {
+            if (!timestamp) return null;
+            
+            // Try parsing as-is first
+            let date = new Date(timestamp);
+            if (!isNaN(date.getTime())) return date.getTime();
+            
+            // Try common formats: MM/DD/YYYY HH:MM:SS or YYYY-MM-DD HH:MM:SS
+            const patterns = [
+                /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+                /(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2}):(\d{2})/,
+                /(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/,
+                /(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = timestamp.match(pattern);
+                if (match) {
+                    if (pattern.source.startsWith('(\\d{1,2})')) {
+                        // MM/DD/YYYY format
+                        const seconds = match[6] || 0;
+                        date = new Date(match[3], match[1] - 1, match[2], match[4], match[5], seconds);
+                    } else {
+                        // YYYY-MM-DD format
+                        const seconds = match[6] || 0;
+                        date = new Date(match[1], match[2] - 1, match[3], match[4], match[5], seconds);
+                    }
+                    if (!isNaN(date.getTime())) return date.getTime();
+                }
+            }
+            
+            return null;
+        }
+
+        function renderScoreboard() {
+            const contentArea = document.getElementById('contentArea');
+
+            if (standings.length === 0) {
+                contentArea.innerHTML = `
+                    <div class="loading-box">
+                        <svg style="width: 64px; height: 64px; fill: #d1d5db; margin: 0 auto 20px;" viewBox="0 0 24 24">
+                            <path d="M6 3h12c1.1 0 2 .9 2 2v2c0 2.2-1.8 4-4 4h-.5c-.8 1.2-2.1 2-3.5 2.2V15h3c1.1 0 2 .9 2 2v2h2v2H5v-2h2v-2c0-1.1.9-2 2-2h3v-1.8c-1.4-.2-2.7-1-3.5-2.2H8c-2.2 0-4-1.8-4-4V5c0-1.1.9-2 2-2zm0 2v2c0 1.1.9 2 2 2h.5C8.8 8.3 9 7.7 9 7V5H6zm12 0h-3v2c0 .7.2 1.3.5 2h.5c1.1 0 2-.9 2-2V5z"/>
+                        </svg>
+                        <h3 style="color: #333; font-size: 1.5em; margin-bottom: 10px;">No Teams Yet</h3>
+                        <p style="color: #666;">Waiting for submissions...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="stats-box">
+                    <div>
+                        <h2>Current Standings</h2>
+                        <p>Ranked by: Problems Solved → Penalty Time → Last Accept Time</p>
+                    </div>
+                    <div class="team-count">
+                        <div class="number">${standings.length}</div>
+                        <div class="label">Teams</div>
+                    </div>
+                </div>
+
+                <div class="scoreboard-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Team</th>
+                                <th class="center">Solved</th>
+                                <th class="center">Penalty</th>
+                                <th>Problems</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            standings.forEach((team, idx) => {
+                const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : '';
+                const trophyIcon = idx === 0 ? '<svg class="trophy-small trophy-gold" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12c1.1 0 2 .9 2 2v2c0 2.2-1.8 4-4 4h-.5c-.8 1.2-2.1 2-3.5 2.2V15h3c1.1 0 2 .9 2 2v2h2v2H5v-2h2v-2c0-1.1.9-2 2-2h3v-1.8c-1.4-.2-2.7-1-3.5-2.2H8c-2.2 0-4-1.8-4-4V5c0-1.1.9-2 2-2zm0 2v2c0 1.1.9 2 2 2h.5C8.8 8.3 9 7.7 9 7V5H6zm12 0h-3v2c0 .7.2 1.3.5 2h.5c1.1 0 2-.9 2-2V5z"/></svg>' :
+                                  idx === 1 ? '<svg class="trophy-small trophy-silver" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12c1.1 0 2 .9 2 2v2c0 2.2-1.8 4-4 4h-.5c-.8 1.2-2.1 2-3.5 2.2V15h3c1.1 0 2 .9 2 2v2h2v2H5v-2h2v-2c0-1.1.9-2 2-2h3v-1.8c-1.4-.2-2.7-1-3.5-2.2H8c-2.2 0-4-1.8-4-4V5c0-1.1.9-2 2-2zm0 2v2c0 1.1.9 2 2 2h.5C8.8 8.3 9 7.7 9 7V5H6zm12 0h-3v2c0 .7.2 1.3.5 2h.5c1.1 0 2-.9 2-2V5z"/></svg>' :
+                                  idx === 2 ? '<svg class="trophy-small trophy-bronze" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12c1.1 0 2 .9 2 2v2c0 2.2-1.8 4-4 4h-.5c-.8 1.2-2.1 2-3.5 2.2V15h3c1.1 0 2 .9 2 2v2h2v2H5v-2h2v-2c0-1.1.9-2 2-2h3v-1.8c-1.4-.2-2.7-1-3.5-2.2H8c-2.2 0-4-1.8-4-4V5c0-1.1.9-2 2-2zm0 2v2c0 1.1.9 2 2 2h.5C8.8 8.3 9 7.7 9 7V5H6zm12 0h-3v2c0 .7.2 1.3.5 2h.5c1.1 0 2-.9 2-2V5z"/></svg>' : '';
+
+                html += `
+                    <tr class="${rankClass}">
+                        <td>
+                            <div class="rank-cell">
+                                <span class="rank-number">${team.rank}</span>
+                                ${trophyIcon}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="team-name">${team.teamName || team.teamId}</div>
+                            <div class="team-id">${team.teamId}</div>
+                        </td>
+                        <td>
+                            <div class="solved-count">${team.solved.size}</div>
+                        </td>
+                        <td>
+                            <div class="penalty-time">${team.penalties}</div>
+                        </td>
+                        <td>
+                            <div class="problems-grid">
+                `;
+
+                for (let i = 1; i <= 14; i++) {
+                    const problem = i.toString();
+                    const solved = team.solved.has(problem);
+                    const attemptsObj = team.attempts[problem] || { count: 0, lastState: null };
+                    const attempts = attemptsObj.count || 0;
+                    const lastState = attemptsObj.lastState || null;
+
+                    let className, title, content;
+                    if (solved) {
+                        className = 'problem-solved';
+                        title = `Problem ${i} - Solved (${attempts} wrong attempts before AC)`;
+                        content = '✓';
+                    } else if (lastState === 'pending') {
+                        className = 'problem-pending';
+                        title = `Problem ${i} - Pending judgment`;
+                        content = '…';
+                    } else if (lastState === 'compile') {
+                        className = 'problem-compile';
+                        title = `Problem ${i} - Compile error (no penalty)`;
+                        content = 'CE';
+                    } else if (lastState === 'time') {
+                        // Time-limit cases shown in yellow
+                        className = 'problem-time';
+                        title = `Problem ${i} - Time Limit Exceeded (+20 min per prior wrong attempt)`;
+                        content = 'TL';
+                    } else if (attempts > 0) {
+                        className = 'problem-attempted';
+                        title = `Problem ${i} - ${attempts} wrong attempts`;
+                        content = attempts;
+                    } else {
+                        className = 'problem-not-attempted';
+                        title = `Problem ${i} - Not attempted`;
+                        content = i;
+                    }
+
+                    html += `<div class="problem-box ${className}" title="${title}">${content}</div>`;
+                }
+
+                html += `
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="rules-box">
+                    <h3>📊 Scoring Rules:</h3>
+                    <div class="rules-grid">
+                        <div>• <strong>Penalty Time:</strong> Sum of submission times (minutes) for solved problems</div>
+                        <div>• <strong>Wrong Attempts:</strong> +20 minutes penalty per wrong submission before AC</div>
+                        <div>• <strong style="color:#92400e">Time Limit:</strong> Counts as a failed attempt (+20 minutes)</div>
+                        <div>• <strong>Compiler Errors:</strong> Do not count as attempts (no penalty)</div>
+                        <div>• <strong>Pending:</strong> Not yet judged (no penalty)</div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #10b981;"></div>
+                            <span style="color: #1e3a8a;">Solved</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #ef4444;"></div>
+                            <span style="color: #1e3a8a;">Failed Attempts</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #facc15; border: 1px solid #f59e0b;"></div>
+                            <span style="color: #1e3a8a;">Time Limit (TL)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #e5e7eb;"></div>
+                            <span style="color: #1e3a8a;">Not Attempted</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            contentArea.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
